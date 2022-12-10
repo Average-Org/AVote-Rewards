@@ -80,7 +80,7 @@ namespace AVote
         {
             if (!args.Player.IsLoggedIn)
             {
-                args.Player.SendErrorMessage("You must be logged in first!");
+                args.Player.SendErrorMessage(config.loginMessage);
                 return;
             }
 
@@ -115,13 +115,13 @@ namespace AVote
                 }
                 else
                 {
-                    Player.SendErrorMessage("You have already claimed your reward for today!");
+                    Player.SendErrorMessage(config.alreadyClaimedMessage);
                     return;
                 }
 
             }
 
-            Player.SendMessage("You haven't voted today! Head to terraria-servers.com and vote for our server page!", Color.LightGreen);
+            Player.SendMessage(config.haventVotedMessage, Color.LightGreen);
             return;
         }
 

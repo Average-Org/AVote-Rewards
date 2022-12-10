@@ -10,12 +10,20 @@ namespace AVote
 {
 	public class Config
 	{
-		public List<string> Commands = new List<string>() { "/give 'meowmere' %PLAYER% 1 legendary" };
+		public List<string> Commands = new List<string>() { "/give meowmere %PLAYER% 1 legendary" };
 
-		public string apiKey = "xxx";
+		public string apiKey { get; set; } = "xxx";
 
-		public string rewardMessage = "[Vote Rewards] %PLAYER% has voted for us and receieved a reward. Use /vote to get the same reward!";
-		public void Write()
+		public string rewardMessage { get; set; } = "[Vote Rewards] %PLAYER% has voted for us and receieved a reward. Use /vote to get the same reward!";
+
+		public string loginMessage { get; set; } = "You must be logged in to use this command!";
+
+		public string alreadyClaimedMessage { get; set; } = "You have already claimed your reward for today!";
+
+		public string haventVotedMessage { get; set; } = "You haven't voted today! Head to terraria-servers.com and vote for our server page!";
+
+
+        public void Write()
 		{
 			string path = Path.Combine(TShock.SavePath, "AVote.json");
 			File.WriteAllText(path, JsonConvert.SerializeObject(this, Formatting.Indented));
