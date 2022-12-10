@@ -23,7 +23,7 @@ namespace AVote
         /// <summary>
         /// The version of the plugin in its current state.
         /// </summary>
-        public override Version Version => new Version(1, 0, 0);
+        public override Version Version => new Version(1, 0, 1);
 
         /// <summary>
         /// The author(s) of the plugin.
@@ -54,7 +54,7 @@ namespace AVote
         {
             if(apiKey == "xxx")
             {
-                Console.WriteLine("VOTE REWARDS: You should probably set your api key in AVote.json in your tShock folder! If not, whatevs, you do you b.");
+                Console.WriteLine("A-VOTE REWARDS: You should probably set your api key in AVote.json in your tShock folder! If not, whatevs, you do you b.");
             }
 
             GeneralHooks.ReloadEvent += Reload;
@@ -64,14 +64,14 @@ namespace AVote
 
         public void GameInit(EventArgs args)
         {
-            Commands.ChatCommands.Add(new Command("av.vote", Vote, "vote"));
+            Commands.ChatCommands.Add(new Command("av.vote", Vote, "vote", "reward"));
             config = Config.Read();
             apiKey = config.apiKey;
         }
         
         public void Reload(ReloadEventArgs args)
         {
-            args.Player.SendMessage("VoteRewards reloaded!", Color.LightGreen);
+            args.Player.SendMessage("VoteRewards - API key reloaded!", Color.LightGreen);
             config = Config.Read();
             apiKey = config.apiKey;
         }
@@ -85,7 +85,6 @@ namespace AVote
             }
 
             var isBeingUsedForTesting = false;
-
             if(args.Parameters.Count == 1)
             {
                 if(args.Parameters[0] == "-t")
@@ -109,7 +108,7 @@ namespace AVote
                     TSPlayer.All.SendMessage(rewardMsg, Microsoft.Xna.Framework.Color.LightGreen);
                     foreach (string cmd in config.Commands)
                     {
-                        var newCmd = cmd.Replace("%PLAYER%", '"' + Player.Name + '"');
+                        string newCmd = cmd.Replace("%PLAYER%", '"' + Player.Name + '"');
                         Commands.HandleCommand(TSPlayer.Server, newCmd);
                     }
                     return;
@@ -157,7 +156,6 @@ namespace AVote
                             }
                             else
                             {
-                                Console.WriteLine("No data");
                             }
                         }
                     }
@@ -165,7 +163,6 @@ namespace AVote
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Exception!!!!");
                 Console.Write(ex);
                 return hasVoted;
             }
@@ -178,7 +175,7 @@ namespace AVote
         {
             bool hasVoted = false;
 
-            string voteUrl = "http://terraria-servers.com/api/?object=votes&element=claim&key=" + apiKey + "&username=" + player.Name;
+            string voteUrl = ($"http://terraria-servers.com/api/?object=votes&element=claim&key={apiKey}&username={player.Name}");
 
             try
             {
@@ -205,7 +202,6 @@ namespace AVote
                             }
                             else
                             {
-                                Console.WriteLine("No data");
                             }
                         }
                     }
@@ -213,7 +209,6 @@ namespace AVote
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Exception!!!!");
                 Console.Write(ex);
                 return hasVoted;
             }
@@ -222,17 +217,13 @@ namespace AVote
 
         }
 
-        /// <summary>
-        /// Performs plugin cleanup logic
-        /// Remove your hooks and perform general cleanup here
-        /// </summary>
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                //unhook
-                //dispose child objects
-                //set large objects to null
+                GeneralHooks.ReloadEvent -= Reload;
+                ServerApi.Hooks.GameInitialize.Deregister(this, GameInit);
             }
             base.Dispose(disposing);
         }
