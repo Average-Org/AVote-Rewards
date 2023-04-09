@@ -14,9 +14,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="OTAPI.Upcoming" Version="3.1.19" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
-    <PackageReference Include="TSAPI" Version="5.1.2" />
     <PackageReference Include="TShock" Version="5.1.2" />
   </ItemGroup>
 </Project>

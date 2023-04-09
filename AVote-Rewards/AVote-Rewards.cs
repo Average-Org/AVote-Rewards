@@ -23,7 +23,7 @@ namespace AVote
         /// <summary>
         /// The version of the plugin in its current state.
         /// </summary>
-        public override Version Version => new Version(1, 0, 1);
+        public override Version Version => new(1, 1);
 
         /// <summary>
         /// The author(s) of the plugin.
@@ -34,8 +34,7 @@ namespace AVote
         /// A short, one-line, description of the plugin's purpose.
         /// </summary>
         public override string Description => "A simple, and light-weight Vote Rewards plugin.";
-        public static string apiKey;
-        public Config config;
+        public static Config config;
 
         /// <summary>
         /// The plugin's constructor
@@ -52,31 +51,22 @@ namespace AVote
         /// </summary>
         public override void Initialize()
         {
-            if(apiKey == "xxx")
-            {
+            config = Config.Read();
+            if (config.apiKey == "xxx")
                 Console.WriteLine("A-VOTE REWARDS: You should probably set your api key in AVote.json in your tShock folder! If not, whatevs, you do you b.");
-            }
 
             GeneralHooks.ReloadEvent += Reload;
-            ServerApi.Hooks.GameInitialize.Register(this, GameInit);
-
-        }
-
-        public void GameInit(EventArgs args)
-        {
             Commands.ChatCommands.Add(new Command("av.vote", Vote, "vote", "reward"));
-            config = Config.Read();
-            apiKey = config.apiKey;
+
         }
-        
+
         public void Reload(ReloadEventArgs args)
         {
             args.Player.SendMessage("VoteRewards - API key reloaded!", Color.LightGreen);
             config = Config.Read();
-            apiKey = config.apiKey;
         }
 
-        public void Vote(CommandArgs args)
+        public async void Vote(CommandArgs args)
         {
             if (!args.Player.IsLoggedIn)
             {
@@ -85,9 +75,9 @@ namespace AVote
             }
 
             var isBeingUsedForTesting = false;
-            if(args.Parameters.Count == 1)
+            if (args.Parameters.Count == 1)
             {
-                if(args.Parameters[0] == "-t")
+                if (args.Parameters[0] == "-t")
                 {
                     if (args.Player.HasPermission("av.admin"))
                     {
@@ -99,13 +89,13 @@ namespace AVote
 
             TSPlayer Player = args.Player;
 
-            if (checkifPlayerVoted(Player).Result == true)
+            if (await CheckIfPlayerVoted(Player) == true)
             {
-                if(rewardClaimed(Player).Result == true || isBeingUsedForTesting == true)
+                if (await CheckIfRewardClaimed(Player) == true || isBeingUsedForTesting == true)
                 {
                     string rewardMsg = config.rewardMessage;
                     rewardMsg = rewardMsg.Replace("%PLAYER%", Player.Name);
-                    TSPlayer.All.SendMessage(rewardMsg, Microsoft.Xna.Framework.Color.LightGreen);
+                    TSPlayer.All.SendMessage(rewardMsg, Color.LightGreen);
                     foreach (string cmd in config.Commands)
                     {
                         string newCmd = cmd.Replace("%PLAYER%", '"' + Player.Name + '"');
@@ -125,17 +115,17 @@ namespace AVote
             return;
         }
 
-        public static async Task<bool> rewardClaimed(TSPlayer player)
+        public static async Task<bool> CheckIfRewardClaimed(TSPlayer player)
         {
             bool hasVoted = false;
 
-            string voteUrl = "http://terraria-servers.com/api/?action=post&object=votes&element=claim&key=" + apiKey + "&username=" + player.Name;
+            string url = "http://terraria-servers.com/api/?action=post&object=votes&element=claim&key=" + config.apiKey + "&username=" + player.Name;
 
             try
             {
-                using (HttpClient client = new HttpClient())
+                using (HttpClient client = new())
                 {
-                    using (HttpResponseMessage res = await client.GetAsync(voteUrl))
+                    using (HttpResponseMessage res = await client.GetAsync(url))
                     {
                         using (HttpContent content = res.Content)
                         {
@@ -154,16 +144,13 @@ namespace AVote
                                     return hasVoted;
                                 }
                             }
-                            else
-                            {
-                            }
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.Write(ex);
+                Console.WriteLine(ex);
                 return hasVoted;
             }
 
@@ -171,17 +158,15 @@ namespace AVote
 
         }
 
-        public static async Task<bool> checkifPlayerVoted(TSPlayer player)
+        public static async Task<bool> CheckIfPlayerVoted(TSPlayer player)
         {
-            bool hasVoted = false;
-
-            string voteUrl = ($"http://terraria-servers.com/api/?object=votes&element=claim&key={apiKey}&username={player.Name}");
+            string url = $"http://terraria-servers.com/api/?object=votes&element=claim&key={config.apiKey}&username={player.Name}";
 
             try
             {
-                using (HttpClient client = new HttpClient())
+                using (HttpClient client = new())
                 {
-                    using (HttpResponseMessage res = await client.GetAsync(voteUrl))
+                    using (HttpResponseMessage res = await client.GetAsync(url))
                     {
                         using (HttpContent content = res.Content)
                         {
@@ -190,18 +175,9 @@ namespace AVote
                             if (data != null)
                             {
                                 if (data == "1" || data == "2")
-                                {
-                                    hasVoted = true;
-                                    return hasVoted;
-                                }
+                                    return true;
                                 else
-                                {
-                                    hasVoted = false;
-                                    return hasVoted;
-                                }
-                            }
-                            else
-                            {
+                                    return false;
                             }
                         }
                     }
@@ -209,23 +185,11 @@ namespace AVote
             }
             catch (Exception ex)
             {
-                Console.Write(ex);
-                return hasVoted;
+                Console.WriteLine(ex);
+                return false;
             }
-
-            return hasVoted;
-
+            return false;
         }
 
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                GeneralHooks.ReloadEvent -= Reload;
-                ServerApi.Hooks.GameInitialize.Deregister(this, GameInit);
-            }
-            base.Dispose(disposing);
-        }
     }
 }
