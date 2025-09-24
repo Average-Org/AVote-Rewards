@@ -23,7 +23,7 @@ namespace AVote
         /// <summary>
         /// The version of the plugin in its current state.
         /// </summary>
-        public override Version Version => new(1, 1);
+        public override Version Version => new(1, 2);
 
         /// <summary>
         /// The author(s) of the plugin.
