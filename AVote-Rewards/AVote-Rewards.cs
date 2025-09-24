@@ -34,7 +34,7 @@ namespace AVote
         /// A short, one-line, description of the plugin's purpose.
         /// </summary>
         public override string Description => "A simple, and light-weight Vote Rewards plugin.";
-        public static Config config;
+        public static Config Config;
 
         /// <summary>
         /// The plugin's constructor
@@ -51,8 +51,8 @@ namespace AVote
         /// </summary>
         public override void Initialize()
         {
-            config = Config.Read();
-            if (config.apiKey == "xxx")
+            Config = Config.Read();
+            if (Config.ApiKey == "xxx")
                 Console.WriteLine("A-VOTE REWARDS: You should probably set your api key in AVote.json in your tShock folder! If not, whatevs, you do you b.");
 
             GeneralHooks.ReloadEvent += Reload;
@@ -60,17 +60,17 @@ namespace AVote
 
         }
 
-        public void Reload(ReloadEventArgs args)
+        private static void Reload(ReloadEventArgs args)
         {
-            args.Player.SendMessage("VoteRewards - API key reloaded!", Color.LightGreen);
-            config = Config.Read();
+            args.Player.SendMessage("VoteRewards - Config reloaded!", Color.LightGreen);
+            Config = Config.Read();
         }
 
         public async void Vote(CommandArgs args)
         {
             if (!args.Player.IsLoggedIn)
             {
-                args.Player.SendErrorMessage(config.loginMessage);
+                args.Player.SendErrorMessage(Config.LoginMessage);
                 return;
             }
 
@@ -82,44 +82,48 @@ namespace AVote
                     if (args.Player.HasPermission("av.admin"))
                     {
                         isBeingUsedForTesting = true;
-                        args.Player.SendInfoMessage("-t");
+                        args.Player.SendInfoMessage("Testing mode enabled. Rewards will be given regardless of voting/claiming status.");
                     }
                 }
             }
 
-            TSPlayer Player = args.Player;
-
-            if (await CheckIfPlayerVoted(Player) == true)
+            var player = args.Player;
+            var playerHasVotedResult = await CheckIfPlayerVoted(player);
+            var playerHasClaimedResult = await CheckIfRewardClaimed(player);
+            
+            if (playerHasVotedResult || isBeingUsedForTesting)
             {
-                if (await CheckIfRewardClaimed(Player) == true || isBeingUsedForTesting == true)
+                if (playerHasClaimedResult || isBeingUsedForTesting)
                 {
-                    string rewardMsg = config.rewardMessage;
-                    rewardMsg = rewardMsg.Replace("%PLAYER%", Player.Name);
+                    var rewardMsg = Config.RewardMessage;
+                    rewardMsg = rewardMsg.Replace("%PLAYER%", player.Name);
                     TSPlayer.All.SendMessage(rewardMsg, Color.LightGreen);
-                    foreach (string cmd in config.Commands)
+                    foreach (var cmd in Config.Commands)
                     {
-                        string newCmd = cmd.Replace("%PLAYER%", '"' + Player.Name + '"');
+                        var newCmd = cmd.Replace("%PLAYER%", '"' + player.Name + '"');
                         Commands.HandleCommand(TSPlayer.Server, newCmd);
                     }
-                    return;
-                }
-                else
-                {
-                    Player.SendErrorMessage(config.alreadyClaimedMessage);
+
+                    if (isBeingUsedForTesting)
+                    {
+                        player.SendInfoMessage("Has claimed vote? " + playerHasClaimedResult);
+                        player.SendInfoMessage("Has voted? " + playerHasVotedResult);
+                    }
                     return;
                 }
 
+                player.SendErrorMessage(Config.AlreadyClaimedMessage);
+                return;
             }
-
-            Player.SendMessage(config.haventVotedMessage, Color.LightGreen);
-            return;
+            
+            player.SendMessage(Config.HaventVotedMessage, Color.LightGreen);
         }
 
         public static async Task<bool> CheckIfRewardClaimed(TSPlayer player)
         {
             bool hasVoted = false;
 
-            string url = "http://terraria-servers.com/api/?action=post&object=votes&element=claim&key=" + config.apiKey + "&username=" + player.Name;
+            string url = "http://terraria-servers.com/api/?action=post&object=votes&element=claim&key=" + Config.ApiKey + "&username=" + player.Name;
 
             try
             {
@@ -160,7 +164,7 @@ namespace AVote
 
         public static async Task<bool> CheckIfPlayerVoted(TSPlayer player)
         {
-            string url = $"http://terraria-servers.com/api/?object=votes&element=claim&key={config.apiKey}&username={player.Name}";
+            string url = $"http://terraria-servers.com/api/?object=votes&element=claim&key={Config.ApiKey}&username={player.Name}";
 
             try
             {

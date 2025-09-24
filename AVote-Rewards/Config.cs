@@ -9,17 +9,22 @@ namespace AVote
 {
     public class Config
     {
-        public List<string> Commands { get; set; } = new List<string>() { "/give meowmere %PLAYER% 1 legendary" };
+        public string[] Commands { get; set; } = { "/give meowmere %PLAYER% 1 legendary" };
 
-        public string apiKey { get; set; } = "xxx";
+        [JsonProperty("apiKey")]
+        public string ApiKey { get; set; } = "xxx";
 
-        public string rewardMessage { get; set; } = "[Vote Rewards] %PLAYER% has voted for us and receieved a reward. Use /vote to get the same reward!";
+        [JsonProperty("rewardMessage")]
+        public string RewardMessage { get; set; } = "[Vote Rewards] %PLAYER% has voted for us and receieved a reward. Use /vote to get the same reward!";
 
-        public string loginMessage { get; set; } = "You must be logged in to use this command!";
+        [JsonProperty("loginMessage")]
+        public string LoginMessage { get; set; } = "You must be logged in to use this command!";
 
-        public string alreadyClaimedMessage { get; set; } = "You have already claimed your reward for today!";
+        [JsonProperty("alreadyClaimedMessage")]
+        public string AlreadyClaimedMessage { get; set; } = "You have already claimed your reward for today!";
 
-        public string haventVotedMessage { get; set; } = "You haven't voted today! Head to terraria-servers.com and vote for our server page!";
+        [JsonProperty("haventVotedMessage")]
+        public string HaventVotedMessage { get; set; } = "You haven't voted today! Head to terraria-servers.com and vote for our server page!";
 
         public static Config Read()
         {
@@ -27,15 +32,14 @@ namespace AVote
 
             try
             {
-                Config config = new();
-
                 if (!File.Exists(filepath))
                 {
-                    File.WriteAllText(filepath, JsonConvert.SerializeObject(config, Formatting.Indented));
+                    var defaultConfig = new Config();
+                    File.WriteAllText(filepath, JsonConvert.SerializeObject(defaultConfig, Formatting.Indented));
+                    return defaultConfig;
                 }
-                config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(filepath));
-
-
+                
+                var config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(filepath)) ?? new Config();
                 return config;
             }
             catch (Exception ex)
